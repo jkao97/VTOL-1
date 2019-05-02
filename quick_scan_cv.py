@@ -4,14 +4,20 @@ import numpy as np
 import math
 import time
 from os import listdir
+ballTargetImgIndex = 0
 
 def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     print("Starting Quickscan CV")
 
     #Set output image folder based on simulation attribute in configs
     out_imagef_path = configs["quick_scan_specific"]["quick_scan_images"]
+    cam = None
     if configs['cv_simulated']['toggled_on']:
         out_imagef_path = configs['cv_simulated']["directory"]
+    else: 
+        cam = cv.init_camera(configs)
+        if cam is None: 
+            print("Camera not found")
 
     rad_threshold = configs["quick_scan_specific"]["rad_threshold"] # between 2 and 3 degrees
     all_kpts = []   #list of list of keypoints/descriptors (each list is an image)
@@ -28,10 +34,19 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     print("\nBeginning to take and store images")
     while (get_autonomy_start_and_stop(autonomyToCV) == (True, False)):
         #Get image via simulation; TODO: get image via vehicle
-        img = cv.cv_simulation(configs) #get image function
+        if configs['cv_simulated']['toggled_on']:
+            #simulation image
+            img = cv.cv_simulation(configs) 
+        else: 
+            #image taken from camera
+            if cam is not None:
+                img = cv.take_picture(cam, configs)
+            else:
+                break
+            
         pitch, roll = get_autonomytoCV_vehicle_angle(autonomyToCV)
 
-        isBall, isTarget = isBallorTarget(img)
+        isBall, isTarget = isBallorTarget(img, True)
         
         autonomyToCV.xbeeMutex.acquire()
         if autonomyToCV.xbee:
@@ -78,7 +93,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
 
     #TODO: return list of keypoints (with new coordinates) and descriptors
     #for now: None
-    return stitch_keypoints(kpts_list=all_kpts, descs_list=all_desc)
+    return None #stitch_keypoints(kpts_list=all_kpts, descs_list=all_desc)
 
 
 def get_autonomy_start_and_stop(autonomyToCV):
@@ -135,13 +150,6 @@ def feature_match(kp1, desc1, kp2, desc2, testing=False):
 
     no_good_matches = 0
     good_matches = []
-
-    # Using 1 match and applying Threshold
-    #for i, m in enumerate(matches):
-    #    if m[0].distance < 200:
-    #        no_good_matches += 1
-    #        good_matches.append(m[0])
-    #        matchesMask[i] = [1]
 
     #Using 2 matches and "ratio test as per Lowe's paper"
     for i,(m,n) in enumerate(matches):
@@ -200,7 +208,9 @@ def stitch_image(img_list):
         cv2.imwrite("cv_stitched_map.jpg", stitched)
 
 def isBallorTarget(img_rgb, see_results=False):
+    global ballTargetImgIndex
 
+    ballTargetImgIndex += 1
     img_rgb = cv2.GaussianBlur(img_rgb, (15, 15), 10)
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
     lower_red = np.array([0,50,50])
@@ -270,23 +280,23 @@ def isBallorTarget(img_rgb, see_results=False):
                     break
 
     if see_results:
-        print(ball_pair)
-        print(target_pair)
-        print(ball_circles)
-        print(target_circles)
+        #print(ball_pair)
+        #print(target_pair)
+        #print(ball_circles)
+        #print(target_circles)
 
         if target_pair is not None:
             # draw circles for Target Pair
             c1 = target_pair[0]
-            cv2.circle(output_img,(c1[0],c1[1]),c1[2],(0,100,100),2)
+            cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(0,100,100),10)
             # draw the center of the circle
-            cv2.circle(output_img,(c1[0],c1[1]),2,(0,100,100),3)
+            cv2.circle(img_rgb,(c1[0],c1[1]),2,(0,100,100),10)
 
             # draw the outer circle
             c2 = target_pair[1]
-            cv2.circle(output_img,(c2[0],c2[1]),c2[2],(0,100,100),2)
+            cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(0,100,100),10)
             # draw the center of the circle
-            cv2.circle(output_img,(c2[0],c2[1]),2,(0,100,100),3)
+            cv2.circle(img_rgb,(c2[0],c2[1]),2,(0,100,100),10)
 
 
         if target_circles is not None:
@@ -301,15 +311,15 @@ def isBallorTarget(img_rgb, see_results=False):
         if ball_pair is not None:
             # draw circles for Ball Pair
             c1 = ball_pair[0]
-            cv2.circle(output_img,(c1[0],c1[1]),c1[2],(255,0,0),2)
+            cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(255,0,0),10)
             # draw the center of the circle
-            cv2.circle(output_img,(c1[0],c1[1]),2,(255,0,0),3)
+            cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),6)
             if len(ball_pair) > 1:
                 # draw the outer circle
                 c2 = ball_pair[1]
-                cv2.circle(output_img,(c2[0],c2[1]),c2[2],(0,0,255),2)
+                cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(0,0,255),10)
                 # draw the center of the circle
-                cv2.circle(output_img,(c2[0],c2[1]),2,(0,0,255),3)
+                cv2.circle(img_rgb,(c2[0],c2[1]),2,(0,0,255),6)
 
         if ball_circles is not None:
             circles = np.uint16(np.around(ball_circles))
@@ -318,14 +328,17 @@ def isBallorTarget(img_rgb, see_results=False):
                 cv2.circle(output_img,(c1[0],c1[1]),c1[2],(100,100,0),2)
                 # draw the center of the circle
                 cv2.circle(output_img,(c1[0],c1[1]),2,(100,100,0),3)
-
-        cv2.imshow("output2", output_img)
-        cv2.waitKey(0)
-
+        #if isBall or isTarget:
+        display_img = cv2.resize(img_rgb, None, fx=0.3, fy=0.3)
+        cv2.imshow("output", display_img)
+        cv2.waitKey(500)
+        print("Ball: " + str(isBall))
+        print("Target: " + str(isTarget))
 
     return isBall, isTarget
 
 def xy_distance(x1, x2, y1, y2):
+    np.seterr('ignore')
     return (((x1 - x2) ** 2) + ((y1 - y2) ** 2)) ** 0.5
 
 
@@ -334,7 +347,7 @@ if __name__ == '__main__':
     #from quick_scan import *
     #quick_scan_cv(parse_configs(sys.argv), QuickScanAutonomyToCV())
     print('just target')
-    isaBall, isaTarget =isBallorTarget("target.jpg")
+    isaBall, isaTarget =isBallorTarget("target.jpg", True)
     print("Ball: " + str(isaBall))
     print("Target: " + str(isaTarget))
     print('\n')
