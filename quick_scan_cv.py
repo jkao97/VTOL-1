@@ -222,7 +222,7 @@ def isBallorTarget(img_rgb, configs, see_results=False):
     img_rgb = cv2.GaussianBlur(img_rgb, (3, 3), 2)
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
     lower_red = np.array([0,100,100])
-    upper_red = np.array([7,255,255])
+    upper_red = np.array([15,255,255])
     mask0 = cv2.inRange(hsv, lower_red, upper_red)
     lower_red = np.array([160,100,100])
     upper_red = np.array([180,255,255])
@@ -337,7 +337,7 @@ def isBallorTarget(img_rgb, configs, see_results=False):
                 # draw the center of the circle
                 cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),3)
         #if isBall or isTarget:
-        display_img = cv2.resize(img_rgb, None, fx=0.4, fy=0.4)
+        display_img = cv2.resize(img_rgb, None, fx=0.9, fy=0.9)
         print("Ball: " + str(isBall))
         print("Target: " + str(isTarget))
         if configs['quick_scan_specific']['demo']:
@@ -351,12 +351,15 @@ def xy_distance(x1, x2, y1, y2):
 
 
 if __name__ == '__main__':
-    directory = "./simulation_images/"
+    directory = "./quick_scan_images/"
     files = listdir(directory)
+    configs = {}
+    d = {'demo': True}
+    configs['quick_scan_specific'] = d
     for f in files:
         img = cv2.imread(directory + f)
-        isBall, isTarget, im2 = isBallorTarget(img, True)
+        isBall, isTarget = isBallorTarget(img, configs, True)
         if isBall or isTarget:
-            cv2.imwrite("./pomona_results/" + f, im2)
-        print(f + ": " + str(isBall) + ", " + str(isTarget))
+            cv2.imwrite("./pomona_results/" + f, img)
+        #print(f + ": " + str(isBall) + ", " + str(isTarget))
     
