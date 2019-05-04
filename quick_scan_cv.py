@@ -211,19 +211,19 @@ def isBallorTarget(img_rgb, see_results=False):
     global ballTargetImgIndex
 
     ballTargetImgIndex += 1
-    img_rgb = cv2.GaussianBlur(img_rgb, (15, 15), 10)
+    img_rgb = cv2.GaussianBlur(img_rgb, (3, 3), 2)
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
-    lower_red = np.array([0,50,50])
-    upper_red = np.array([5,255,255])
+    lower_red = np.array([0,100,100])
+    upper_red = np.array([20,255,255])
     mask0 = cv2.inRange(hsv, lower_red, upper_red)
-    lower_red = np.array([165,100,100])
+    lower_red = np.array([160,100,100])
     upper_red = np.array([180,255,255])
     mask1 = cv2.inRange(hsv, lower_red, upper_red)
     mask = mask0 + mask1
     output_img = img_rgb.copy()
     output_img[np.where(mask==0)] = 0
     output_img[np.where(mask!=0)] = 255
-
+    
 
     output_gray = cv2.cvtColor(output_img, cv2.COLOR_BGR2GRAY)
     target_circles = cv2.HoughCircles(output_gray,cv2.HOUGH_GRADIENT,1.2,.01,
@@ -280,7 +280,7 @@ def isBallorTarget(img_rgb, see_results=False):
                     break
 
     if see_results:
-        #print(ball_pair)
+        print(ball_pair)
         #print(target_pair)
         #print(ball_circles)
         #print(target_circles)
@@ -288,24 +288,24 @@ def isBallorTarget(img_rgb, see_results=False):
         if target_pair is not None:
             # draw circles for Target Pair
             c1 = target_pair[0]
-            cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(0,100,100),10)
+            cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(255,0,0),10)
             # draw the center of the circle
-            cv2.circle(img_rgb,(c1[0],c1[1]),2,(0,100,100),10)
+            cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0, 0),10)
 
             # draw the outer circle
             c2 = target_pair[1]
-            cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(0,100,100),10)
+            cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(255,0,0),10)
             # draw the center of the circle
-            cv2.circle(img_rgb,(c2[0],c2[1]),2,(0,100,100),10)
+            cv2.circle(img_rgb,(c2[0],c2[1]),2,(255,0,0),10)
 
 
         if target_circles is not None:
             circles = np.uint16(np.around(target_circles))
             #Looks for a target
             for i, c1 in enumerate(circles[0,:]):
-                cv2.circle(output_img,(c1[0],c1[1]),c1[2],(255,0,0),2)
+                cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(255,0,0),10)
                 # draw the center of the circle
-                cv2.circle(output_img,(c1[0],c1[1]),2,(255,0,0),3)
+                cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),3)
 
 
         if ball_pair is not None:
@@ -317,24 +317,23 @@ def isBallorTarget(img_rgb, see_results=False):
             if len(ball_pair) > 1:
                 # draw the outer circle
                 c2 = ball_pair[1]
-                cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(0,0,255),10)
+                cv2.circle(img_rgb,(c2[0],c2[1]),c2[2],(255,0,0),10)
                 # draw the center of the circle
-                cv2.circle(img_rgb,(c2[0],c2[1]),2,(0,0,255),6)
+                cv2.circle(img_rgb,(c2[0],c2[1]),2,(255,0,0),6)
 
         if ball_circles is not None:
             circles = np.uint16(np.around(ball_circles))
             #Looks for a target
             for i, c1 in enumerate(circles[0,:]):
-                cv2.circle(output_img,(c1[0],c1[1]),c1[2],(100,100,0),2)
+                cv2.circle(img_rgb,(c1[0],c1[1]),c1[2],(255,0,0),10)
                 # draw the center of the circle
-                cv2.circle(output_img,(c1[0],c1[1]),2,(100,100,0),3)
+                cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),3)
         #if isBall or isTarget:
         display_img = cv2.resize(img_rgb, None, fx=0.3, fy=0.3)
         cv2.imshow("output", display_img)
         cv2.waitKey(500)
         print("Ball: " + str(isBall))
         print("Target: " + str(isTarget))
-
     return isBall, isTarget
 
 def xy_distance(x1, x2, y1, y2):
@@ -343,34 +342,12 @@ def xy_distance(x1, x2, y1, y2):
 
 
 if __name__ == '__main__':
-    #import sys
-    #from quick_scan import *
-    #quick_scan_cv(parse_configs(sys.argv), QuickScanAutonomyToCV())
-    print('just target')
-    isaBall, isaTarget =isBallorTarget("target.jpg", True)
-    print("Ball: " + str(isaBall))
-    print("Target: " + str(isaTarget))
-    print('\n')
-
-    print('just ball')
-    isaBall, isaTarget =isBallorTarget("ball.jpg")
-    print("Ball: " + str(isaBall))
-    print("Target: " + str(isaTarget))
-    print('\n')
-
-    print('target and ball')
-    isaBall, isaTarget = isBallorTarget("ball2.jpg")
-    print("Ball: " + str(isaBall))
-    print("Target: " + str(isaTarget))
-    print('\n')
-
-    print('small ball and target')
-    isaBall, isaTarget = isBallorTarget("smolball.jpg")
-    print("Ball: " + str(isaBall))
-    print("Target: " + str(isaTarget))
-    print('\n')
-
-    print('small ball')
-    isaBall, isaTarget = isBallorTarget("smolballonly.jpg")
-    print("Ball: " + str(isaBall))
-    print("Target: " + str(isaTarget))
+    directory = "./simulation_images/"
+    files = listdir(directory)
+    for f in files:
+        img = cv2.imread(directory + f)
+        isBall, isTarget, im2 = isBallorTarget(img, True)
+        if isBall or isTarget:
+            cv2.imwrite("./pomona_results/" + f, im2)
+        print(f + ": " + str(isBall) + ", " + str(isTarget))
+    
