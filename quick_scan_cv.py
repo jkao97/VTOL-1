@@ -46,7 +46,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
             
         pitch, roll = get_autonomytoCV_vehicle_angle(autonomyToCV)
 
-        isBall, isTarget = isBallorTarget(img, True)
+        isBall, isTarget = isBallorTarget(img, configs, True)
         
         autonomyToCV.xbeeMutex.acquire()
         if autonomyToCV.xbee:
@@ -207,14 +207,14 @@ def stitch_image(img_list):
     if status == 0:
         cv2.imwrite("cv_stitched_map.jpg", stitched)
 
-def isBallorTarget(img_rgb, see_results=False):
+def isBallorTarget(img_rgb, configs, see_results=False):
     global ballTargetImgIndex
 
     ballTargetImgIndex += 1
     img_rgb = cv2.GaussianBlur(img_rgb, (3, 3), 2)
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
     lower_red = np.array([0,100,100])
-    upper_red = np.array([20,255,255])
+    upper_red = np.array([7,255,255])
     mask0 = cv2.inRange(hsv, lower_red, upper_red)
     lower_red = np.array([160,100,100])
     upper_red = np.array([180,255,255])
@@ -329,11 +329,12 @@ def isBallorTarget(img_rgb, see_results=False):
                 # draw the center of the circle
                 cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),3)
         #if isBall or isTarget:
-        display_img = cv2.resize(img_rgb, None, fx=0.3, fy=0.3)
+        display_img = cv2.resize(img_rgb, None, fx=0.4, fy=0.4)
         print("Ball: " + str(isBall))
         print("Target: " + str(isTarget))
-        cv2.imshow("output", display_img)
-        cv2.waitKey(500)
+        if configs['quick_scan_specific']['demo']:
+            cv2.imshow("output", display_img)
+            cv2.waitKey(500)
     return isBall, isTarget
 
 def xy_distance(x1, x2, y1, y2):
