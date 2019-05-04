@@ -280,7 +280,7 @@ def isBallorTarget(img_rgb, see_results=False):
                     break
 
     if see_results:
-        print(ball_pair)
+        #print(ball_pair)
         #print(target_pair)
         #print(ball_circles)
         #print(target_circles)
