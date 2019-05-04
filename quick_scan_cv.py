@@ -330,10 +330,10 @@ def isBallorTarget(img_rgb, see_results=False):
                 cv2.circle(img_rgb,(c1[0],c1[1]),2,(255,0,0),3)
         #if isBall or isTarget:
         display_img = cv2.resize(img_rgb, None, fx=0.3, fy=0.3)
-        cv2.imshow("output", display_img)
-        cv2.waitKey(500)
         print("Ball: " + str(isBall))
         print("Target: " + str(isTarget))
+        cv2.imshow("output", display_img)
+        cv2.waitKey(500)
     return isBall, isTarget
 
 def xy_distance(x1, x2, y1, y2):
