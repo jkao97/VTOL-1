@@ -40,7 +40,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
         else: 
             #image taken from camera
             if cam is not None:
-                img = cv.take_picture(cam, configs)
+                img = take_picture(cam)
             else:
                 break
             
@@ -94,6 +94,14 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     #TODO: return list of keypoints (with new coordinates) and descriptors
     #for now: None
     return None #stitch_keypoints(kpts_list=all_kpts, descs_list=all_desc)
+
+def take_picture(camera):
+    count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
+    camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
+    camera.grab()
+    _, img = camera.retrieve()
+    crop_img = img[78:630, 270:1071]
+    return crop_img
 
 
 def get_autonomy_start_and_stop(autonomyToCV):
